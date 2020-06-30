@@ -1,1 +1,1 @@
-web: gunicorn deasafio-extra-3.wsgi
+web: sh setup.sh && streamlit run desafio-extra.py
