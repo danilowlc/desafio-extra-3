@@ -50,6 +50,7 @@ def cria_correlationplot(df, colunas_numericas):
 
 def main():
     st.title("Aceleradev - DataScience")
+    st.title("Aceleradev - DataScience")
     st.header('Desafio Extra Modulo 3')
     st.image('code.png', width=200)
     
