@@ -65,6 +65,7 @@ def main():
         col_objects = list(aux[aux['tipos'] == 'object']['colunas'])
         colunas = list(df.columns)
         st.dataframe(aux[['tipos', 'percental_faltando']])
+        st.markdown("### Escolha os Atributos que deseja analisar")
         col = st.multiselect("Atributos", colunas, default=colunas[:3])
         dataframe = df[col].copy()
         slider = st.slider('Escolha o numero de Linhas', 5, dataframe.shape[0])
