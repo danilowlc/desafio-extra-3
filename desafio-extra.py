@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+import base64
 
 def criar_histograma(coluna, df):
     chart = alt.Chart(df, width=600).mark_bar().encode(
@@ -46,7 +47,13 @@ def cria_correlationplot(df, colunas_numericas):
     color = 'correlation:Q')
 
     return cor_plot + text
-    pass
+    
+
+def get_table_download_link(df):
+    csv = df.to_csv(index=False)
+    b64 = base64.b64encode(csv.encode()).decode()
+    return f'<a href="data:file/csv;base64,{b64}" download="file_modified.csv">Download file_modified.csv</a>'
+
 
 def main():
     st.title("Aceleradev - DataScience")
@@ -56,21 +63,25 @@ def main():
     separador = st.text_input("Qual e o separador?", value=',')
     file = st.file_uploader("Escolha um arquivo no formato 'CSV'", type='csv')
     if file:
-        st.subheader('Estatística descritiva univariada')
+        
         df = pd.read_csv(file, sep=separador)
-        aux = pd.DataFrame({'colunas':df.columns,
-                            'tipos':df.dtypes,
-                            'percental_faltando': (df.isna().sum()/df.shape[0])*100})
+        colunas = list(df.columns)
+
+        st.markdown("### Escolha os Atributos que deseja analisar")
+        col1 = st.multiselect("Atributos", colunas, default=colunas[:3])
+        dataframe = df[col1].copy()
+        aux = pd.DataFrame({'colunas':dataframe.columns,
+                            'tipos':dataframe.dtypes,
+                            'percental_faltando': (dataframe.isna().sum()/dataframe.shape[0])*100})
+        
         col_numericas = list(aux[aux['tipos'] != 'object']['colunas'])
         col_objects = list(aux[aux['tipos'] == 'object']['colunas'])
-        colunas = list(df.columns)
         st.dataframe(aux[['tipos', 'percental_faltando']])
-        st.markdown("### Escolha os Atributos que deseja analisar")
-        col = st.multiselect("Atributos", colunas, default=colunas[:3])
-        dataframe = df[col].copy()
+        
         slider = st.slider('Escolha o numero de Linhas', 5, dataframe.shape[0])
         st.dataframe(dataframe.head(slider))
 
+        st.subheader('Estatística descritiva univariada')
         col = st.selectbox('Selecione a coluna :', col_numericas)
         if col:
             st.markdown('Selecione o que deseja analisar :')
@@ -108,11 +119,12 @@ def main():
             st.write(criar_barras(col_num_barras, col_cat_barras, dataframe))
 
         boxplot = st.checkbox('Boxplot')
-        if boxplot:
-            col_num_box = st.selectbox('Selecione a Coluna Numerica:', col_numericas,key = 'unique' )
-            col_cat_box = st.selectbox('Selecione uma coluna categorica : ', col_objects)
-            st.markdown('Boxplot ' + str(col_cat_box) + ' pela coluna ' + col_num_box)
-            st.write(criar_boxplot(col_num_box, col_cat_box, dataframe))
+        if col_objects:
+            if boxplot:
+                col_num_box = st.selectbox('Selecione a Coluna Numerica:', col_numericas,key = 'unique' )
+                col_cat_box = st.selectbox('Selecione uma coluna categorica : ', col_objects)
+                st.markdown('Boxplot ' + str(col_cat_box) + ' pela coluna ' + col_num_box)
+                st.write(criar_boxplot(col_num_box, col_cat_box, dataframe))
 
         scatter = st.checkbox('Scatterplot')
         if scatter:
@@ -126,8 +138,23 @@ def main():
         if correlacao:
             st.markdown('Gráfico de correlação das colunas númericas')
             st.write(cria_correlationplot(dataframe, col_numericas))
+        
+        col_mudar = st.multiselect("Escolhas as colunas numericas para aplicar as mudancas: ", dataframe.columns.to_list(), default=dataframe.columns.to_list())
+        metodo = st.radio("Escolha o Metodo: ", ("Media", "Mediana"))
 
-        st.image('logo.png', width=250)
+        if metodo == "Media":
+            dataframe.fillna(dataframe[col_mudar].mean(), inplace=True)
+        
+        if metodo == "Mediana":
+            dataframe.fillna(dataframe[col_mudar].median(), inplace=True)
+
+        st.dataframe(dataframe[col_mudar].head(slider))
+
+        st.markdown(f"### {get_table_download_link(dataframe)} ", unsafe_allow_html=True)
+        st.markdown("")
+
+
+        st.image('logo2.png', use_column_width=True)
         st.write("(https://github.com/danilowlc)")
 if __name__ == '__main__':
     main()
